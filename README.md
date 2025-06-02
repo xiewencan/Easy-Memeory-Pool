@@ -1,43 +1,43 @@
-# 结构
+# EASY MEMORY POOL
+## 结构
 内存池的架构如图所示，由ThreadCache,CentralCache,PageCache三层组成。
 
 ![ponilsan.tw3.png|500](https://spade-photos.oss-cn-beijing.aliyuncs.com/202505291824391.png)
 
-## ThreadCache
+### ThreadCache
 ```
-	std::array<void*, FREE_LIST_SIZE> freeList_; ? ?
-? ? std::array<size_t, FREE_LIST_SIZE> freeListSize_;
+	std::array<void*, FREE_LIST_SIZE> freeList_;    
+    std::array<size_t, FREE_LIST_SIZE> freeListSize_;
 ```
 + 侵入式链表
 + 单例模式
 + `freeList_`的结构
 ![[../Excalidraw/ThreadCache.excalidraw]]
 + `freeListSize_`:存储每个自由链表的长度
-## CentralCache
+### CentralCache
 ```
-? ? // 中心缓存的自由链表
-? ? // 经测试，void*与std::atomic<void*>效果相同
-? ? std::array<std::atomic<void*>, FREE_LIST_SIZE> centralFreeList_;
-? ? // 用于同步的自旋锁
-? ? std::array<std::atomic_flag, FREE_LIST_SIZE> locks_;
+    // 中心缓存的自由链表
+    // 经测试，void*与std::atomic<void*>效果相同
+    std::array<std::atomic<void*>, FREE_LIST_SIZE> centralFreeList_;
+    // 用于同步的自旋锁
+    std::array<std::atomic_flag, FREE_LIST_SIZE> locks_;
 ```
 + `centralFreeList_`：空闲页面，结构与`freeList_`相同
 + `lock_`：自旋锁数组，给每个大小的空闲页添加自旋锁，只有获取了锁才能访问自由链表
-## PageCache
+### PageCache
 ```
-? ? // 按页数管理空闲span，不同页数对应不同Span链表
-? ? std::map<size_t, Span*> freeSpans_;
-? ? // 页号到span的映射，用于回收
-? ? std::map<void*, Span*> spanMap_;
-? ? // 全局锁
-? ? std::mutex mutex_;
+    // 按页数管理空闲span，不同页数对应不同Span链表
+    std::map<size_t, Span*> freeSpans_;
+    // 页号到span的映射，用于回收
+    std::map<void*, Span*> spanMap_;
+    // 全局锁
+    std::mutex mutex_;
 ```
 + `freeSpans_`：不同大小空闲页面的哈希表，有序，用来分配页面，与`freeList_`有点类似，不过由于页面数量的种类不会太多，采用`map`更节约，且大小不会随意改变
 + `spanMap_`： 用来记录所有从系统申请的内存的地址和大小，包含空闲与占用，用于回收
 + `mutex_`：全局锁
 
-# 流程
-### allocate 流程：
+#### allocate 流程：
 1. `EasyMemoryPool::allocate(bytes) `
    - 这是用户调用的入口点。它会获取当前线程的 `ThreadCache` 实例。
    - 调用 `ThreadCache::getInstance()->allocate(bytes)` 。
