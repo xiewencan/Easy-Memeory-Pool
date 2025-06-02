@@ -10,23 +10,23 @@ namespace easyMemoryPool {
         if (index >= FREE_LIST_SIZE || batchNum == 0) 
         return nullptr;
 
-        while(lockList[index].test_and_set(std::memory_order_acquire)){ // ³¢ÊÔ»ñÈ¡Ëø£¬Ê§°ÜÔòµÈ´ı
-            std::this_thread::yield(); // µÈ´ıÆäËûÏß³ÌÊÍ·ÅËø
+        while(lockList[index].test_and_set(std::memory_order_acquire)){ // å°è¯•è·å–é”ï¼Œå¤±è´¥åˆ™ç­‰å¾…
+            std::this_thread::yield(); // ç­‰å¾…å…¶ä»–çº¿ç¨‹é‡Šæ”¾é”
         }
 
         void* result;
         try{
-            result = freeList[index].load(std::memory_order_relaxed); // ³¢ÊÔ´Ó×ÔÓÉÁ´±íÖĞ»ñÈ¡ÄÚ´æ¿é
+            result = freeList[index].load(std::memory_order_relaxed); // å°è¯•ä»è‡ªç”±é“¾è¡¨ä¸­è·å–å†…å­˜å—
             if(!result){
-                size_t size = (index + 1) * ALIGNMENT; // ¼ÆËãĞèÒª·ÖÅäµÄÄÚ´æ´óĞ¡
-                void* new_memory = fetchFromPageCache(size); // ´ÓÒ³»º´æÖĞ»ñÈ¡ÄÚ´æ¿é
+                size_t size = (index + 1) * ALIGNMENT; // è®¡ç®—éœ€è¦åˆ†é…çš„å†…å­˜å¤§å°
+                void* new_memory = fetchFromPageCache(size); // ä»é¡µç¼“å­˜ä¸­è·å–å†…å­˜å—
                 if(!new_memory){
-                    lockList[index].clear(std::memory_order_release); // ÊÍ·ÅËø
+                    lockList[index].clear(std::memory_order_release); // é‡Šæ”¾é”
                     return nullptr;
                 }
                 char* current_block = static_cast<char*>(new_memory);
-                size_t totalBlocks = (PageCache::Page_Size * SPAN_PAGES) / size; // ¼ÆËãĞèÒª·ÖÅäµÄÄÚ´æ¿éÊıÁ¿
-                size_t allocBlocks = std::min(totalBlocks, batchNum); // ¼ÆËãÊµ¼Ê·ÖÅäµÄÄÚ´æ¿éÊıÁ¿
+                size_t totalBlocks = (PageCache::Page_Size * SPAN_PAGES) / size; // è®¡ç®—éœ€è¦åˆ†é…çš„å†…å­˜å—æ•°é‡
+                size_t allocBlocks = std::min(totalBlocks, batchNum); // è®¡ç®—å®é™…åˆ†é…çš„å†…å­˜å—æ•°é‡
                 
                 // Link allocated blocks
                 if (allocBlocks > 0) {
@@ -63,32 +63,32 @@ namespace easyMemoryPool {
                     cur = *reinterpret_cast<void**>(cur);
                     count++;
                 }
-                if (count == batchNum){ // ·ÖÅä³É¹¦
-                    if (pre){ // »¹ÓĞÊ£ÓàµÄÄÚ´æ¿é
-                        freeList[index].store(cur,std::memory_order_relaxed); // ¸üĞÂ×ÔÓÉÁ´±íµÄÍ·²¿
-                        *reinterpret_cast<void**>(pre) = nullptr; // ½«preµÄÏÂÒ»¸öÖ¸ÕëÖÃÎª¿Õ
+                if (count == batchNum){ // åˆ†é…æˆåŠŸ
+                    if (pre){ // è¿˜æœ‰å‰©ä½™çš„å†…å­˜å—
+                        freeList[index].store(cur,std::memory_order_relaxed); // æ›´æ–°è‡ªç”±é“¾è¡¨çš„å¤´éƒ¨
+                        *reinterpret_cast<void**>(pre) = nullptr; // å°†preçš„ä¸‹ä¸€ä¸ªæŒ‡é’ˆç½®ä¸ºç©º
                     } else { // No remaining blocks in the current free list
                         freeList[index].store(nullptr, std::memory_order_relaxed);
                     }
                 } else { // Not enough blocks in the current free list
-                    lockList[index].clear(std::memory_order_release); // ÊÍ·ÅËø
+                    lockList[index].clear(std::memory_order_release); // é‡Šæ”¾é”
                     return nullptr; // Indicate failure to allocate enough blocks
                 }
             }
 
         }
-        catch(...){ // ²¶»ñÒì³££¬ÊÍ·ÅËø
-            lockList[index].clear(std::memory_order_release); // ÊÍ·ÅËø
-            throw; // ÖØĞÂÅ×³öÒì³£
+        catch(...){ // æ•è·å¼‚å¸¸ï¼Œé‡Šæ”¾é”
+            lockList[index].clear(std::memory_order_release); // é‡Šæ”¾é”
+            throw; // é‡æ–°æŠ›å‡ºå¼‚å¸¸
         }
-        lockList[index].clear(std::memory_order_release); // ÊÍ·ÅËø
+        lockList[index].clear(std::memory_order_release); // é‡Šæ”¾é”
         return result;
     }
     void CentralCache::returnRange(void *start, size_t returnNum, size_t index){
         if (index >= FREE_LIST_SIZE || returnNum == 0) return;
 
-        while(lockList[index].test_and_set(std::memory_order_acquire)){ // ³¢ÊÔ»ñÈ¡Ëø£¬Ê§°ÜÔòµÈ´ı
-            std::this_thread::yield(); // µÈ´ıÆäËûÏß³ÌÊÍ·ÅËø
+        while(lockList[index].test_and_set(std::memory_order_acquire)){ // å°è¯•è·å–é”ï¼Œå¤±è´¥åˆ™ç­‰å¾…
+            std::this_thread::yield(); // ç­‰å¾…å…¶ä»–çº¿ç¨‹é‡Šæ”¾é”
         }
 
         try{
@@ -103,7 +103,7 @@ namespace easyMemoryPool {
             if (cur) { // Ensure cur is not nullptr before dereferencing
                 *reinterpret_cast<void**>(cur) = freeList[index].load(std::memory_order_relaxed);
             }
-            freeList[index].store(start,std::memory_order_relaxed); // ¸üĞÂ×ÔÓÉÁ´±íµÄÍ·²¿
+            freeList[index].store(start,std::memory_order_relaxed); // æ›´æ–°è‡ªç”±é“¾è¡¨çš„å¤´éƒ¨
 
         }
         catch (...) 
@@ -115,18 +115,18 @@ namespace easyMemoryPool {
         lockList[index].clear(std::memory_order_release);
     }
     void* CentralCache::fetchFromPageCache(size_t size){
-        // 1. ¼ÆËãÊµ¼ÊĞèÒªµÄÒ³Êı
+        // 1. è®¡ç®—å®é™…éœ€è¦çš„é¡µæ•°
         size_t numPages = (size + PageCache::Page_Size - 1) / PageCache::Page_Size;
 
-        // 2. ¸ù¾İ´óĞ¡¾ö¶¨·ÖÅä²ßÂÔ
+        // 2. æ ¹æ®å¤§å°å†³å®šåˆ†é…ç­–ç•¥
         if (size <= SPAN_PAGES * PageCache::Page_Size) 
         {
-            // Ğ¡ÓÚµÈÓÚ32KBµÄÇëÇó£¬Ê¹ÓÃ¹Ì¶¨8Ò³
+            // å°äºç­‰äº32KBçš„è¯·æ±‚ï¼Œä½¿ç”¨å›ºå®š8é¡µ
             return PageCache::getInstance()->allocateSpan(SPAN_PAGES);
         } 
         else 
         {
-            // ´óÓÚ32KBµÄÇëÇó£¬°´Êµ¼ÊĞèÇó·ÖÅä
+            // å¤§äº32KBçš„è¯·æ±‚ï¼ŒæŒ‰å®é™…éœ€æ±‚åˆ†é…
             return PageCache::getInstance()->allocateSpan(numPages);
         }
     }

@@ -9,7 +9,7 @@
 using namespace easyMemoryPool;
 using namespace std::chrono;
 
-// ¼ÆÊ±Æ÷Àà
+// è®¡æ—¶å™¨ç±»
 class Timer 
 {
     high_resolution_clock::time_point start;
@@ -19,15 +19,15 @@ public:
     double elapsed() 
     {
         auto end = high_resolution_clock::now();
-        return duration_cast<microseconds>(end - start).count() / 1000.0; // ×ª»»ÎªºÁÃë
+        return duration_cast<microseconds>(end - start).count() / 1000.0; // è½¬æ¢ä¸ºæ¯«ç§’
     }
 };
 
-// ĞÔÄÜ²âÊÔÀà
+// æ€§èƒ½æµ‹è¯•ç±»
 class PerformanceTest 
 {
 private:
-    // ²âÊÔÍ³¼ÆĞÅÏ¢
+    // æµ‹è¯•ç»Ÿè®¡ä¿¡æ¯
     struct TestStats 
     {
         double memPoolTime{0.0};
@@ -37,32 +37,32 @@ private:
     };
 
 public:
-    // 1. ÏµÍ³Ô¤ÈÈ
+    // 1. ç³»ç»Ÿé¢„çƒ­
     static void warmup() 
     {
         std::cout << "Warming up memory systems...\n";
-        // Ê¹ÓÃ pair À´´æ´¢Ö¸ÕëºÍ¶ÔÓ¦µÄ´óĞ¡
+        // ä½¿ç”¨ pair æ¥å­˜å‚¨æŒ‡é’ˆå’Œå¯¹åº”çš„å¤§å°
         std::vector<std::pair<void*, size_t>> warmupPtrs;
         
-        // Ô¤ÈÈÄÚ´æ³Ø
+        // é¢„çƒ­å†…å­˜æ± 
         for (int i = 0; i < 1000; ++i) 
         {
             for (size_t size : {32, 64, 128, 256, 512}) {
                 void* p = EasyMemoryPool::allocate(size);
-                warmupPtrs.emplace_back(p, size);  // ´æ´¢Ö¸ÕëºÍ¶ÔÓ¦µÄ´óĞ¡
+                warmupPtrs.emplace_back(p, size);  // å­˜å‚¨æŒ‡é’ˆå’Œå¯¹åº”çš„å¤§å°
             }
         }
         
-        // ÊÍ·ÅÔ¤ÈÈÄÚ´æ
+        // é‡Šæ”¾é¢„çƒ­å†…å­˜
         for (const auto& [ptr, size] : warmupPtrs) 
         {
-            EasyMemoryPool::deallocate(ptr, size);  // Ê¹ÓÃÊµ¼Ê·ÖÅäµÄ´óĞ¡½øĞĞÊÍ·Å
+            EasyMemoryPool::deallocate(ptr, size);  // ä½¿ç”¨å®é™…åˆ†é…çš„å¤§å°è¿›è¡Œé‡Šæ”¾
         }
         
         std::cout << "Warmup complete.\n\n";
     }
 
-    // 2. Ğ¡¶ÔÏó·ÖÅä²âÊÔ
+    // 2. å°å¯¹è±¡åˆ†é…æµ‹è¯•
     static void testSmallAllocation() 
     {
         constexpr size_t NUM_ALLOCS = 100000;
@@ -71,7 +71,7 @@ public:
         std::cout << "\nTesting small allocations (" << NUM_ALLOCS << " allocations of " 
                   << SMALL_SIZE << " bytes):" << std::endl;
         
-        // ²âÊÔÄÚ´æ³Ø
+        // æµ‹è¯•å†…å­˜æ± 
         {
             Timer t;
             std::vector<void*> ptrs;
@@ -81,7 +81,7 @@ public:
             {
                 ptrs.push_back(EasyMemoryPool::allocate(SMALL_SIZE));
                 
-                // Ä£ÄâÕæÊµÊ¹ÓÃ£º²¿·ÖÁ¢¼´ÊÍ·Å
+                // æ¨¡æ‹ŸçœŸå®ä½¿ç”¨ï¼šéƒ¨åˆ†ç«‹å³é‡Šæ”¾
                 if (i % 4 == 0) 
                 {
                     EasyMemoryPool::deallocate(ptrs.back(), SMALL_SIZE);
@@ -98,7 +98,7 @@ public:
                       << t.elapsed() << " ms" << std::endl;
         }
         
-        // ²âÊÔnew/delete
+        // æµ‹è¯•new/delete
         {
             Timer t;
             std::vector<void*> ptrs;
@@ -125,7 +125,7 @@ public:
         }
     }
     
-    // 3. ¶àÏß³Ì²âÊÔ
+    // 3. å¤šçº¿ç¨‹æµ‹è¯•
     static void testMultiThreaded() 
     {
         constexpr size_t NUM_THREADS = 4;
@@ -151,9 +151,9 @@ public:
                                      : new char[size];
                 ptrs.push_back({ptr, size});
                 
-                // Ëæ»úÊÍ·ÅÒ»Ğ©ÄÚ´æ
+                // éšæœºé‡Šæ”¾ä¸€äº›å†…å­˜
                 if (rand() % 100 < 75) 
-                {  // 75%µÄ¸ÅÂÊÊÍ·Å
+                {  // 75%çš„æ¦‚ç‡é‡Šæ”¾
                     size_t index = rand() % ptrs.size();
                     if (useMemPool) {
                         EasyMemoryPool::deallocate(ptrs[index].first, ptrs[index].second);
@@ -165,7 +165,7 @@ public:
                 }
             }
             
-            // ÇåÀíÊ£ÓàÄÚ´æ
+            // æ¸…ç†å‰©ä½™å†…å­˜
             for (const auto& [ptr, size] : ptrs) 
             {
                 if (useMemPool) 
@@ -179,7 +179,7 @@ public:
             }
         };
         
-        // ²âÊÔÄÚ´æ³Ø
+        // æµ‹è¯•å†…å­˜æ± 
         {
             Timer t;
             std::vector<std::thread> threads;
@@ -198,7 +198,7 @@ public:
                       << t.elapsed() << " ms" << std::endl;
         }
         
-        // ²âÊÔnew/delete
+        // æµ‹è¯•new/delete
         {
             Timer t;
             std::vector<std::thread> threads;
@@ -218,7 +218,7 @@ public:
         }
     }
     
-    // 4. »ìºÏ´óĞ¡²âÊÔ
+    // 4. æ··åˆå¤§å°æµ‹è¯•
     static void testMixedSizes() 
     {
         constexpr size_t NUM_ALLOCS = 50000;
@@ -227,7 +227,7 @@ public:
         std::cout << "\nTesting mixed size allocations (" << NUM_ALLOCS 
                   << " allocations):" << std::endl;
         
-        // ²âÊÔÄÚ´æ³Ø
+        // æµ‹è¯•å†…å­˜æ± 
         {
             Timer t;
             std::vector<std::pair<void*, size_t>> ptrs;
@@ -239,7 +239,7 @@ public:
                 void* p = EasyMemoryPool::allocate(size);
                 ptrs.emplace_back(p, size);
                 
-                // ÅúÁ¿ÊÍ·Å
+                // æ‰¹é‡é‡Šæ”¾
                 if (i % 100 == 0 && !ptrs.empty()) 
                 {
                     size_t releaseCount = std::min(ptrs.size(), size_t(20));
@@ -260,7 +260,7 @@ public:
                       << t.elapsed() << " ms" << std::endl;
         }
         
-        // ²âÊÔnew/delete
+        // æµ‹è¯•new/delete
         {
             Timer t;
             std::vector<std::pair<void*, size_t>> ptrs;
@@ -298,10 +298,10 @@ int main()
 {
     std::cout << "Starting performance tests..." << std::endl;
     
-    // Ô¤ÈÈÏµÍ³
+    // é¢„çƒ­ç³»ç»Ÿ
     PerformanceTest::warmup();
     
-    // ÔËĞĞ²âÊÔ
+    // è¿è¡Œæµ‹è¯•
     PerformanceTest::testSmallAllocation();
     PerformanceTest::testMultiThreaded();
     PerformanceTest::testMixedSizes();

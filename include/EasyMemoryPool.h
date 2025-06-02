@@ -4,11 +4,11 @@ namespace easyMemoryPool{
 
     class EasyMemoryPool {
         public:
-        // 分配内存
+        // 鍒嗛厤鍐呭瓨
         static void* allocate(size_t bytes){
             return ThreadCache::getInstance()->allocate(bytes);
         }
-        // 回收内存
+        // 鍥炴敹鍐呭瓨
         static void deallocate(void* p, size_t bytes){
             ThreadCache::getInstance()->deallocate(p, bytes);
         }
